@@ -1,10 +1,10 @@
 COMPILER = g++
 FLAGS = -std=c++14 -O3 #-Wall -Werror -Wextra
 
-SO_DEPS = $(shell pkg-config --libs --cflags libSimpleAmqpClient msgpack librabbitmq)
-SO_DEPS += -lboost_program_options -lpthread -larmadillo
+SO_DEPS = $(shell pkg-config --libs --cflags opencv libSimpleAmqpClient msgpack librabbitmq)
+SO_DEPS += -lboost_program_options -lboost_system -lboost_filesystem -lpthread -larmadillo -I../include/
 
-TARGET = bbs-validation
+TARGET = bbs-pedestrian-map
 SERVICE = service-$(TARGET)
 VERSION = trace
 DOCKER_USER = mendonca

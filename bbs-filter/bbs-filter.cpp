@@ -56,16 +56,6 @@ int main(int argc, char* argv[]) {
   // Load camera parameters
   auto parameters = camera::load_parameters(path);
   
-  // std::map<std::string, CameraParameters> parameters;
-
-  // for (auto& camera : cameras) {
-  //   mat E, I;
-  //   E.load(path + camera + "/extrinsic.dat");
-  //   I.load(path + camera + "/intrinsic.dat");
-  //   parameters.insert({camera, {I, E(span(0, 2), span(0, 2)), E(span(0, 2), 3)}});
-  //   is::logger()->info("Loading {} parameters", camera);
-  // }
-
   is::Connection is(is::connect(uri));
 
   std::vector<std::string> bbs_topics;

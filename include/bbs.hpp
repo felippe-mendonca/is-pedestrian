@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <is/is.hpp>
 #include "camera.hpp"
 
 namespace bbs {
@@ -15,7 +16,7 @@ using namespace arma;
 using namespace camera;
 
 mat change_frame(mat const& bb, std::map<std::string, CameraParameters> const& parameters, int dst,
-                       std::function<bool(mat)> validation = [](mat) { return true; }) {
+                 std::function<bool(mat)> validation = [](mat) { return true; }) {
   if (bb.is_empty())
     return mat(0, 0);
   // return bb;
@@ -52,9 +53,8 @@ mat change_frame(mat const& bb, std::map<std::string, CameraParameters> const& p
   return nbb;
 }
 
-mat change_frame(std::vector<mat> const& cameras_bbs,
-                       std::map<std::string, CameraParameters> const& parameters, int dst,
-                       std::function<bool(mat)> validation = [](mat) { return true; }) {
+mat change_frame(std::vector<mat> const& cameras_bbs, std::map<std::string, CameraParameters> const& parameters,
+                 int dst, std::function<bool(mat)> validation = [](mat) { return true; }) {
   mat output;
   for (auto& bbs : cameras_bbs) {
     if (bbs.is_empty())
@@ -109,8 +109,7 @@ double iou(mat const& bb_src, mat const& bb) {
   return i / u;
 }
 
-mat iou_validation(mat const& bbs, mat const& transformed_bbs, unsigned int min_intersections = 1,
-                         double th = 0.5) {
+mat iou_validation(mat const& bbs, mat const& transformed_bbs, unsigned int min_intersections = 1, double th = 0.5) {
   mat output;
   bbs.each_row([&](rowvec const& bb) {
     auto n_intersections = 0;
@@ -125,7 +124,7 @@ mat iou_validation(mat const& bbs, mat const& transformed_bbs, unsigned int min_
 }
 
 mat validate_bbs(mat& bbs, std::vector<mat> const& cameras_bbs,
-                       std::map<std::string, CameraParameters> const& parameters) {
+                 std::map<std::string, CameraParameters> const& parameters) {
   if (bbs.is_empty())
     return mat(0, 0);
   auto dst = static_cast<int>(bbs(0, 5) - 1.0);
@@ -135,6 +134,24 @@ mat validate_bbs(mat& bbs, std::vector<mat> const& cameras_bbs,
   mat validated_bbs = iou_validation(bbs, transformed_bbs);
   // validated_bbs.print("val_bbs " + std::to_string(dst));
   return validated_bbs;
+}
+
+mat get_position(std::map<std::string, mat> const& cameras_bbs,
+              std::map<std::string, CameraParameters> const& parameters) {
+  mat output;
+  std::for_each(std::begin(cameras_bbs), std::end(cameras_bbs), [&](auto& bbs) {
+    auto src_camera = bbs.first;
+    bbs.second.each_row([&](rowvec const& bb) {
+      auto x = bb(0, 0);
+      auto y = bb(0, 1);
+      auto w = bb(0, 2);
+      auto h = bb(0, 3);
+      mat pc = mat({x + w / 2, y + h, 1.0}).t();
+      mat wpc = c2w(pc, src_camera, parameters);
+      output = join_vert(output, wpc.rows(0, 1).t());
+    });
+  });
+  return output;
 }
 
 }  // ::bbs
