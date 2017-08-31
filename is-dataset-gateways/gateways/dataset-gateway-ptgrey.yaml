@@ -1,0 +1,69 @@
+kind: "Pod"
+apiVersion: "v1"
+metadata:
+  name: "dataset-ptgrey-gws"
+spec:
+  hostNetwork: true
+  dnsPolicy: "ClusterFirstWithHostNet"
+  nodeSelector:
+    kubernetes.io/hostname: edge
+  volumes:
+  - name: dataset-volume
+    hostPath: 
+      path: /home/felippe/datasets/images_11ago
+  containers:
+  - name: "dataset-ptgrey0"
+    image: mendonca/dataset-gateway-ptgrey:0.1
+    volumeMounts:
+    - mountPath: /dataset
+      name: dataset-volume
+    command: ["/opt/ptgrey"]
+    args: ["-e", "ptgrey.0", "-i", "/dataset", "-u", "amqp://192.168.1.110:30000"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 128Mi
+      requests:
+        memory: 64Mi
+
+  - name: "dataset-ptgrey1"
+    image: mendonca/dataset-gateway-ptgrey:0.1
+    volumeMounts:
+    - mountPath: /dataset
+      name: dataset-volume
+    command: ["/opt/ptgrey"]
+    args: ["-e", "ptgrey.1", "-i", "/dataset", "-u", "amqp://192.168.1.110:30000"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 128Mi
+      requests:
+        memory: 64Mi
+
+  - name: "dataset-ptgrey2"
+    image: mendonca/dataset-gateway-ptgrey:0.1
+    volumeMounts:
+    - mountPath: /dataset
+      name: dataset-volume
+    command: ["/opt/ptgrey"]
+    args: ["-e", "ptgrey.2", "-i", "/dataset", "-u", "amqp://192.168.1.110:30000"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 128Mi
+      requests:
+        memory: 64Mi
+
+  - name: "dataset-ptgrey3"
+    image: mendonca/dataset-gateway-ptgrey:0.1
+    volumeMounts:
+    - mountPath: /dataset
+      name: dataset-volume
+    command: ["/opt/ptgrey"]
+    args: ["-e", "ptgrey.3", "-i", "/dataset", "-u", "amqp://192.168.1.110:30000"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 128Mi
+      requests:
+        memory: 64Mi
