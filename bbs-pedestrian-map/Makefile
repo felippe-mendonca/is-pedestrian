@@ -12,7 +12,7 @@ DOCKER_USER = mendonca
 all: $(TARGET)
 
 clean:
-	rm $(TARGET)
+	rm -f $(TARGET)
 
 $(TARGET): $(TARGET).cpp
 	$(COMPILER) $^ -o $@ $(FLAGS) $(SO_DEPS)
