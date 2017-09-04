@@ -1,3 +1,4 @@
+#include "bbs.hpp"
 #include <armadillo>
 #include <boost/iterator/zip_iterator.hpp>
 #include <boost/program_options.hpp>
@@ -13,6 +14,8 @@
 #include <string>
 #include <vector>
 #include "arma.hpp"
+#include "camera.hpp"
+#include "radar.hpp"
 
 namespace po = boost::program_options;
 using namespace is::msg::camera;
@@ -37,9 +40,8 @@ const std::map<int, cv::Scalar> colors{
 };
 
 namespace is {
-void putText(cv::Mat& frame, std::string const& text, cv::Point point, int fontFace, double fontScale,
-             cv::Scalar color, cv::Scalar backgroundColor, int tickness = 1, int linetype = 8,
-             bool bottomLeftOrigin = false) {
+void putText(cv::Mat& frame, std::string const& text, cv::Point point, int fontFace, double fontScale, cv::Scalar color,
+             cv::Scalar backgroundColor, int tickness = 1, int linetype = 8, bool bottomLeftOrigin = false) {
   int baseline = 0;
   cv::Size text_size = cv::getTextSize(text, fontFace, fontScale, tickness, &baseline);
   cv::rectangle(frame, point + cv::Point(0, baseline), point + cv::Point(text_size.width, -text_size.height),
@@ -55,6 +57,10 @@ int main(int argc, char* argv[]) {
   std::string bb_topic;
   std::string prefix;
   double fps;
+  std::string path;
+  bool show_radar;
+  unsigned int width;
+  unsigned int height;
 
   po::options_description description("Allowed options");
   auto&& options = description.add_options();
@@ -64,7 +70,12 @@ int main(int argc, char* argv[]) {
           "cameras");
   options("bb_topic,b", po::value<std::string>(&bb_topic)->default_value("bbs"), "boundbox topic");
   options("prefix,P", po::value<std::string>(&prefix)->default_value(""), "prefix of topics");
-  options("fps,f", po::value<double>(&fps), "fps"); 
+  options("fps,f", po::value<double>(&fps), "fps");
+  options("radar,r", po::bool_switch(&show_radar), "enables pedestrian radar");
+  options("rwidth,w", po::value<unsigned int>(&width)->default_value(800), "radar width");
+  options("rheight,h", po::value<unsigned int>(&height)->default_value(500), "radar height");
+  options("parameters,p", po::value<std::string>(&path)->default_value("../cameras-parameters/"),
+          "cameras parameters path");
 
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, description), vm);
@@ -112,6 +123,8 @@ int main(int argc, char* argv[]) {
   auto bbs_tag = is.subscribe(bbs_topics);
 
   is::log::info("Starting capture. Period: {} ms", period);
+  Radar radar(width, height);
+  auto parameters = camera::load_parameters(path);
 
   while (1) {
     auto images_msg = is.consume_sync(tag, topics, period);
@@ -142,9 +155,9 @@ int main(int argc, char* argv[]) {
         is::putText(current_frame, text, point, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(255, 255, 255),
                     cv::Scalar(0, 0, 0), tickness);
       });
-      
-      is::putText(current_frame, "ptgrey." + std::to_string(n_frame), cv::Point(0, 22), cv::FONT_HERSHEY_SIMPLEX,
-                  1.0, colors.at(n_frame + 1), cv::Scalar(0, 0, 0), 2);
+
+      is::putText(current_frame, "ptgrey." + std::to_string(n_frame), cv::Point(0, 22), cv::FONT_HERSHEY_SIMPLEX, 1.0,
+                  colors.at(n_frame + 1), cv::Scalar(0, 0, 0), 2);
 
       cv::resize(current_frame, current_frame, cv::Size(current_frame.cols / 2, current_frame.rows / 2));
       if (n_frame < 2) {
@@ -165,6 +178,18 @@ int main(int argc, char* argv[]) {
     cv::vconcat(rows_frames, output_image);
 
     cv::imshow("Intelligent Space", output_image);
+
+    if (show_radar) {
+      std::map<std::string, arma::mat> bbs;
+      transform(std::begin(bbs_msg), std::end(bbs_msg), std::begin(cameras), std::inserter(bbs, std::begin(bbs)),
+                [](auto& msg, auto& camera) { return std::make_pair(camera, is::msgpack<arma::mat>(msg)); });
+      auto positions = bbs::get_position(bbs, parameters);
+      auto clustered_positions = bbs::clustering::distance(positions, 500.0);
+      radar.update(positions, cv::Scalar(0, 255, 255), 5, false);
+      radar.update(clustered_positions, cv::Scalar(255, 0, 255));
+      cv::imshow("Radar", radar.get_image());
+      cv::waitKey(1);
+    }
     cv::waitKey(1);
   }
 
