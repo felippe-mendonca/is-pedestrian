@@ -59,6 +59,10 @@ int main(int argc, char* argv[]) {
   double fps;
   std::string path;
   bool show_radar;
+  bool hold_positions;
+  bool clustering;
+  double clustering_threshold;
+  bool original_detections;
   unsigned int width;
   unsigned int height;
 
@@ -72,6 +76,11 @@ int main(int argc, char* argv[]) {
   options("prefix,P", po::value<std::string>(&prefix)->default_value(""), "prefix of topics");
   options("fps,f", po::value<double>(&fps), "fps");
   options("radar,r", po::bool_switch(&show_radar), "enables pedestrian radar");
+  options("hold_positions,H", po::bool_switch(&hold_positions), "hold pedestrian positions on radar");
+  options("clustering,C", po::bool_switch(&clustering), "enables clustering positions");
+  options("original_detections,O", po::bool_switch(&original_detections), "enables original positions");
+  options("clustering_distance,d", po::value<double>(&clustering_threshold)->default_value(500.0),
+          "clustering threshold");
   options("rwidth,w", po::value<unsigned int>(&width)->default_value(800), "radar width");
   options("rheight,h", po::value<unsigned int>(&height)->default_value(500), "radar height");
   options("parameters,p", po::value<std::string>(&path)->default_value("../cameras-parameters/"),
@@ -184,9 +193,13 @@ int main(int argc, char* argv[]) {
       transform(std::begin(bbs_msg), std::end(bbs_msg), std::begin(cameras), std::inserter(bbs, std::begin(bbs)),
                 [](auto& msg, auto& camera) { return std::make_pair(camera, is::msgpack<arma::mat>(msg)); });
       auto positions = bbs::get_position(bbs, parameters);
-      auto clustered_positions = bbs::clustering::distance(positions, 500.0);
-      radar.update(positions, cv::Scalar(0, 255, 255), 5, false);
-      radar.update(clustered_positions, cv::Scalar(255, 0, 255));
+      if (original_detections) {
+        radar.update(positions, cv::Scalar(0, 255, 255), 5, hold_positions);
+      }
+      if (clustering) {
+        auto clustered_positions = bbs::clustering::distance(positions, clustering_threshold);
+        radar.update(clustered_positions, cv::Scalar(255, 0, 255));
+      }
       cv::imshow("Radar", radar.get_image());
       cv::waitKey(1);
     }
