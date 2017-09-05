@@ -7,12 +7,12 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include "camera.hpp"
 #include "msgs/controller.hpp"
 #include "msgs/frame_converter.hpp"
 
 using namespace std::chrono_literals;
 using namespace std::chrono;
-using namespace is::msg;
 using namespace is::msg::camera;
 using namespace is::msg::robot;
 using namespace is::msg::common;
@@ -20,7 +20,7 @@ using namespace is::msg::geometry;
 using namespace is::msg::controller;
 namespace po = boost::program_options;
 
-void overlay_image(cv::Mat & src, cv::Mat const& overlay, cv::Point const& location) {
+void overlay_image(cv::Mat& src, cv::Mat const& overlay, cv::Point const& location) {
   for (int y = cv::max(location.y, 0); y < src.rows; ++y) {
     int fY = y - location.y;
     if (fY >= overlay.rows)
@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
   is::msg::camera::Resolution resolution;
   double fps;
   std::string img_type;
+  std::string path;
 
   po::options_description description("Allowed options");
   auto&& options = description.add_options();
@@ -94,6 +95,8 @@ int main(int argc, char* argv[]) {
   options("width,w", po::value<unsigned int>(&resolution.width)->default_value(1288), "image width");
   options("fps,f", po::value<double>(&fps)->default_value(5.0), "frames per second");
   options("type,t", po::value<std::string>(&img_type)->default_value("gray"), "image type");
+  options("parameters,p", po::value<std::string>(&path)->default_value("../cameras-parameters"),
+          "cameras parameters path");
 
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, description), vm);
@@ -116,6 +119,8 @@ int main(int argc, char* argv[]) {
   }
   if (vm.count("type"))
     configure.image_type = ImageType{img_type};
+
+  auto parameters = camera::load_parameters(path);
 
   auto is = is::connect(uri);
   auto client = is::make_client(is);
@@ -171,11 +176,13 @@ int main(int argc, char* argv[]) {
     cv::vconcat(rows_frames, output_image);
 
     if (handle.request) {
-      is::logger()->info("Mouse clicked [{}][{},{}]", handle.reference, handle.point.x, handle.point.y);
-      VisualServoingRequest request;
-      request.point = handle.point;
-      request.reference = handle.reference;
-      auto req_id = client.request("visual_servoing.go_to", is::msgpack(request));
+      arma::mat p_image({handle.point.x, handle.point.y, 1.0});
+      auto p_world = camera::c2w(p_image.t(), handle.reference, parameters);
+      is::log::info("Mouse clicked [{}][{},{}] -> [{},{}]", handle.reference, handle.point.x, handle.point.y, p_world(0), p_world(1));
+      Point request;
+      request.x = p_world(0);
+      request.y = p_world(1);
+      auto req_id = client.request("visual_servoing.go_to_xy", is::msgpack(request));
       client.receive_for(10ms, req_id, is::policy::discard_others);
       handle.request = false;
     }
