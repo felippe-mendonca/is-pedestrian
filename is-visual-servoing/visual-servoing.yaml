@@ -121,7 +121,7 @@ spec:
       - name: bbs-filter
         image: mendonca/service-bbs-filter:0.1
         command: ["/opt/bbs-filter"]
-        args: ["-u", "amqp://192.168.1.110:30000", "-f", "4.0", "-P", "_dataset"]
+        args: ["-u", "amqp://192.168.1.110:30000", "-f", "4.0", "-P", "dataset_"]
         imagePullPolicy: Always
         resources:
           limits:
