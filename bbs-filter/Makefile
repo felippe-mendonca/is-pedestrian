@@ -6,7 +6,7 @@ SO_DEPS += -lboost_program_options -lboost_system -lboost_filesystem -lpthread -
 
 TARGET = bbs-filter
 SERVICE = service-$(TARGET)
-VERSION = trace
+VERSION = 0.1
 DOCKER_USER = mendonca
 
 all: $(TARGET)
@@ -21,8 +21,10 @@ docker: $(TARGET)
 	rm -rf libs/
 	mkdir libs/
 	lddcp $(TARGET) libs/
+	cp -r ../cameras-parameters/ .
 	docker build -t $(DOCKER_USER)/$(SERVICE):$(VERSION) .
 	rm -rf libs/
+	rm -rf cameras-parameters
 	
 docker_push: docker
 	docker image push $(DOCKER_USER)/$(SERVICE):$(VERSION)
