@@ -51,7 +51,7 @@ struct VisualServoingConfigure {
   optional<double> center_offset = none;
   optional<double> final_error = none;
   
-  IS_DEFINE_MSG(cameras, resolution, sample_rate, image_type, robot, max_vel_x, max_vel_y, gain_x, gain_y, center_offset);
+  IS_DEFINE_MSG(cameras, resolution, sample_rate, image_type, robot, max_vel_x, max_vel_y, gain_x, gain_y, center_offset, final_error);
 };
 
 }  // ::controller
