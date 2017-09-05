@@ -43,6 +43,7 @@ std::map<std::string, CameraParameters> load_parameters(std::string const& dir) 
     auto pos = camera.find_last_of('/');
     auto camera_key = camera.substr(pos+1);
     parameters.insert({camera_key, {I, E(span(0, 2), span(0, 2)), E(span(0, 2), 3)}});
+    is::log::info("{} parameters loaded", camera_key);
   }
   return parameters;
 }

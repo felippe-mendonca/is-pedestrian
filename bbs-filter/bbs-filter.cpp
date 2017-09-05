@@ -78,18 +78,17 @@ int main(int argc, char* argv[]) {
   while (1) {
     auto bbs_msg = is.consume_sync(bbs_tag, bbs_topics, period);
     
-    is::log::info("Images consumed");
-    std::vector<arma::mat> cameras_bbs;
-    std::transform(std::begin(bbs_msg), std::end(bbs_msg), std::back_inserter(cameras_bbs),
-    [](auto& msg) { return is::msgpack<arma::mat>(msg); });
+    is::log::info("BBS consumed");
     
-    std::vector<arma::mat> validated_bbs;
-    std::transform(std::begin(cameras_bbs), std::end(cameras_bbs), std::back_inserter(validated_bbs),
-    [&, cameras_bbs](arma::mat& bbs) { return bbs::validate_bbs(bbs, cameras_bbs, parameters); });
-    
-    for (int i = 0; i < cameras.size(); ++i) {
-      is::log::info("Camera: {} | {} BBs received and {} validated.", cameras[i], cameras_bbs[i].n_rows , validated_bbs[i].n_rows);
-      is.publish(prefix + cameras[i] + ".new_bbs", is::msgpack(validated_bbs[i]));
+    std::map<std::string, arma::mat> bbs;
+    std::transform(std::begin(bbs_msg), std::end(bbs_msg), std::begin(cameras), std::inserter(bbs, std::begin(bbs)),
+    [](auto& msg, auto& camera) { return std::make_pair(camera, is::msgpack<arma::mat>(msg)); });
+       
+    auto validated_bbs = bbs::validate_bbs(bbs, parameters);
+
+    for (auto& camera : cameras) {
+      is::log::info("Camera: {} | {} BBs received and {} validated.", camera, bbs[camera].n_rows , validated_bbs[camera].n_rows);
+      is.publish(prefix + camera + ".new_bbs", is::msgpack(validated_bbs[camera]));
     }
   }
 

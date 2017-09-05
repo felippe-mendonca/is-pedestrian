@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <iterator>
 #include "camera.hpp"
 
 namespace bbs {
@@ -172,6 +173,17 @@ mat validate_bbs(mat& bbs, std::vector<mat> const& cameras_bbs,
   // transformed_bbs.print("transformed_bbs " + std::to_string(dst));
   mat validated_bbs = iou_validation(bbs, transformed_bbs);
   // validated_bbs.print("val_bbs " + std::to_string(dst));
+  return validated_bbs;
+}
+
+std::map<std::string, mat> validate_bbs(std::map<std::string, mat> const& bbs,
+                                        std::map<std::string, CameraParameters> const& parameters) {
+  std::map<std::string, mat> validated_bbs;
+  std::transform(std::begin(bbs), std::end(bbs), std::inserter(validated_bbs, std::begin(validated_bbs)), [&](auto & camera_bbs){
+    auto dst_camera = camera_bbs.first;
+    auto transformed_bbs = change_frame(bbs, parameters, dst_camera);
+    return std::make_pair(dst_camera, iou_validation(camera_bbs.second, transformed_bbs[dst_camera]));
+  });
   return validated_bbs;
 }
 
