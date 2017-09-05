@@ -10,7 +10,7 @@ spec:
   volumes:
   - name: dataset-volume
     hostPath: 
-      path: /home/felippe/datasets/images_11ago
+      path: /home/felippe/datasets/images_4sep
   containers:
   - name: "dataset-ptgrey0"
     image: mendonca/dataset-gateway-ptgrey:0.1
