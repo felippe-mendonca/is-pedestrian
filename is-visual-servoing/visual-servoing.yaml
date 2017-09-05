@@ -101,4 +101,29 @@ spec:
           limits:
             cpu: 500m
             memory: 128Mi
+---
 
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: bbs-filter
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: bbs-filter
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: edge
+      containers:
+      - name: bbs-filter
+        image: mendonca/service-bbs-filter:0.1
+        command: ["/opt/bbs-filter"]
+        args: ["-u", "amqp://192.168.1.110:30000", "-f", "4.0", "-P", "_dataset"]
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
