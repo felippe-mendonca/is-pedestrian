@@ -120,6 +120,12 @@ int main(int argc, char* argv[]) {
   if (vm.count("type"))
     configure.image_type = ImageType{img_type};
 
+  configure.final_error = 100.0;
+  configure.x_min = -1000.0;
+  configure.x_max = 1000.0;
+  configure.y_min = -1000.0;
+  configure.y_max = 1000.0;
+
   auto parameters = camera::load_parameters(path);
 
   auto is = is::connect(uri);
@@ -178,7 +184,8 @@ int main(int argc, char* argv[]) {
     if (handle.request) {
       arma::mat p_image({handle.point.x, handle.point.y, 1.0});
       auto p_world = camera::c2w(p_image.t(), handle.reference, parameters);
-      is::log::info("Mouse clicked [{}][{},{}] -> [{},{}]", handle.reference, handle.point.x, handle.point.y, p_world(0), p_world(1));
+      is::log::info("Mouse clicked [{}][{},{}] -> [{},{}]", handle.reference, handle.point.x, handle.point.y,
+                    p_world(0), p_world(1));
       Point request;
       request.x = p_world(0);
       request.y = p_world(1);

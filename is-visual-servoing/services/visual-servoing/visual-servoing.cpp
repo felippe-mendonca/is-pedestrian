@@ -86,12 +86,35 @@ int main(int argc, char* argv[]) {
   double gain_y = 250.0 / 800.0;
   double center_offset = 200.0;
   double final_error = 100.0;
+  double set_point_offset = 0.0;
+  // Fence parameteres
+  double x_min = -2500.0;
+  double x_max = 2000.0;
+  double y_min = -1000.0;
+  double y_max = 1000.0;
+
+  auto fence = [&]() {
+    auto x = current_pose.position.x;
+    auto y = current_pose.position.y;
+    auto xd = desired_pose.position.x;
+    auto yd = desired_pose.position.y;
+    auto a = (yd - y) / (xd - x);
+    auto b = 1 / a;
+    auto x_out = xd > x_max || xd < x_min;
+    auto y_out = yd > y_max || yd < y_min;
+    auto xd_b = x_out ? std::min(std::max(xd, x_min), x_max) : xd;
+    auto yd_b = y_out ? std::min(std::max(yd, y_min), y_max) : yd;
+    xd_b = !x_out && y_out ? b * (yd_b - y) + x : xd_b;
+    yd_b = x_out && !y_out ? a * (xd_b - x) + y : yd_b;
+    desired_pose.position.x = xd_b;
+    desired_pose.position.y = yd_b;
+  };
 
   FrameConverterRequest frame_converter_request;
   frame_converter_request.z = 650.0;
   PointsWithReference points3d;
   Pose image_pose;
-  enum GoToType {GO_TO, GO_TO_XY};
+  enum GoToType { GO_TO, GO_TO_XY };
   GoToType goto_type;
 
   int n_deadlines = 0;
@@ -199,6 +222,9 @@ int main(int argc, char* argv[]) {
         break;
       }
       }
+      fence();
+      is::log::info("Desired pose with fence: {},{}", desired_pose.position.x, desired_pose.position.y);
+
       set_desired_pose.store(false);
       arrived = false;
       controller_state = ControllerState::REQUEST_PATTERN;
@@ -351,6 +377,11 @@ int main(int argc, char* argv[]) {
           if (new_configure.gain_y) { gain_y = (new_configure.gain_y).get(); }
           if (new_configure.center_offset) { center_offset = (new_configure.center_offset).get(); }
           if (new_configure.final_error) { final_error = (new_configure.final_error).get(); }
+          if (new_configure.set_point_offset) { set_point_offset = (new_configure.set_point_offset).get(); }
+          if (new_configure.x_min) { x_min = (new_configure.x_min).get(); }
+          if (new_configure.x_max) { x_max = (new_configure.x_max).get(); }
+          if (new_configure.y_min) { y_min = (new_configure.y_min).get(); }
+          if (new_configure.y_max) { y_max = (new_configure.y_max).get(); }
           cameras = new_configure.cameras;
           robot = new_configure.robot;
         // clang-format on

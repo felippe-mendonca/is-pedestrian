@@ -1,10 +1,10 @@
 #ifndef __IS_MSG_CONTROLLER_HPP__
 #define __IS_MSG_CONTROLLER_HPP__
 
-#include <is/msgs/robot.hpp>
 #include <is/msgs/camera.hpp>
-#include <is/msgs/geometry.hpp>
 #include <is/msgs/common.hpp>
+#include <is/msgs/geometry.hpp>
+#include <is/msgs/robot.hpp>
 #include <is/packer.hpp>
 
 namespace is {
@@ -18,7 +18,7 @@ using namespace is::msg::common;
 using namespace boost;
 
 struct FinalPositionRequest {
-	Pose current_pose;
+  Pose current_pose;
   Pose desired_pose;
 
   double gain_x;
@@ -43,15 +43,22 @@ struct VisualServoingConfigure {
   optional<Resolution> resolution = none;
   optional<SamplingRate> sample_rate = none;
   optional<ImageType> image_type = none;
-  // Final position controller parameters 
+  // Final position controller parameters
   optional<double> max_vel_x = none;
   optional<double> max_vel_y = none;
   optional<double> gain_x = none;
   optional<double> gain_y = none;
   optional<double> center_offset = none;
   optional<double> final_error = none;
-  
-  IS_DEFINE_MSG(cameras, resolution, sample_rate, image_type, robot, max_vel_x, max_vel_y, gain_x, gain_y, center_offset, final_error);
+  optional<double> set_point_offset = none;
+  // Fence parameteres
+  optional<double> x_min = none;
+  optional<double> x_max = none;
+  optional<double> y_min = none;
+  optional<double> y_max = none;
+
+  IS_DEFINE_MSG(cameras, robot, resolution, sample_rate, image_type, max_vel_x, max_vel_y, gain_x, gain_y,
+                center_offset, final_error, set_point_offset, x_min, x_max, y_min, y_max);
 };
 
 }  // ::controller
