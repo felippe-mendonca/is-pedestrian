@@ -119,25 +119,46 @@ int main(int argc, char* argv[]) {
   }
   client.receive_for(1s);
 
+  // std::vector<std::string> topics;
+  // for (auto& camera : cameras) {
+  //   topics.push_back(prefix + camera + ".frame");
+  // }
+  // auto tag = is.subscribe(topics);
+
+  // std::vector<std::string> bbs_topics;
+  // for (auto& camera : cameras) {
+  //   bbs_topics.push_back(prefix + camera + "." + bb_topic);
+  // }
+  // auto bbs_tag = is.subscribe(bbs_topics);
+
   std::vector<std::string> topics;
   for (auto& camera : cameras) {
     topics.push_back(prefix + camera + ".frame");
+    topics.push_back(prefix + camera + "." + bb_topic);
   }
   auto tag = is.subscribe(topics);
-
-  std::vector<std::string> bbs_topics;
-  for (auto& camera : cameras) {
-    bbs_topics.push_back(prefix + camera + "." + bb_topic);
-  }
-  auto bbs_tag = is.subscribe(bbs_topics);
 
   is::log::info("Starting capture. Period: {} ms", period);
   Radar radar(width, height);
   auto parameters = camera::load_parameters(path);
 
   while (1) {
-    auto images_msg = is.consume_sync(tag, topics, period);
-    auto bbs_msg = is.consume_sync(bbs_tag, bbs_topics, period);
+    auto msgs = is.consume_sync(tag, topics, period);
+    std::vector<is::Envelope::ptr_t> images_msg;
+    std::vector<is::Envelope::ptr_t> bbs_msg;
+    std::for_each(std::begin(msgs), std::end(msgs), [&](auto& msg) {
+      auto routing_key = msg->RoutingKey();
+      auto pos = routing_key.find_last_of('.');
+      auto type = routing_key.substr(pos + 1);
+      if (type == bb_topic) {
+        bbs_msg.push_back(msg);
+      } else if (type == "frame") {
+        images_msg.push_back(msg);
+      }
+    });
+
+    // auto images_msg = is.consume_sync(tag, topics, period);
+    // auto bbs_msg = is.consume_sync(bbs_tag, bbs_topics, period);
 
     auto it_begin = boost::make_zip_iterator(boost::make_tuple(images_msg.begin(), bbs_msg.begin()));
     auto it_end = boost::make_zip_iterator(boost::make_tuple(images_msg.end(), bbs_msg.end()));

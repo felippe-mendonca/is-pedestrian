@@ -1,0 +1,46 @@
+kind: "Pod"
+apiVersion: "v1"
+metadata:
+  name: "pedestrian-detection"
+spec:
+  hostNetwork: true
+  dnsPolicy: "ClusterFirstWithHostNet"
+  nodeSelector:
+    kubernetes.io/hostname: ninja
+  containers:
+
+  - name: "detector-ptgrey0"
+    image: monfa/appmatlab:ver2.0
+    command: ["/opt/run"]
+    args: ["0"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 1024Mi
+
+  - name: "detector-ptgrey1"
+    image: monfa/appmatlab:ver2.0
+    command: ["/opt/run"]
+    args: ["1"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 1024Mi
+
+  - name: "detector-ptgrey2"
+    image: monfa/appmatlab:ver2.0
+    command: ["/opt/run"]
+    args: ["2"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 1024Mi
+
+  - name: "detector-ptgrey3"
+    image: monfa/appmatlab:ver2.0
+    command: ["/opt/run"]
+    args: ["3"]
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 1024Mi
